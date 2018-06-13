@@ -11,7 +11,6 @@ path = "src/bin/coreos-metadata.rs"
 base64 = "0.6"
 byteorder = "1.1"
 clippy = { version = "*", optional = true }
-clap = "2.26"
 error-chain = { version = "0.11", default-features = false }
 hostname = "0.1"
 hyper = "0.11"
@@ -29,6 +28,7 @@ serde-xml-rs = "0.2"
 slog-async = "2.1"
 slog-scope = "4.0"
 slog-term = "2.2"
+structopt = "0.2"
 tempdir = "0.3"
 update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.1.2" }
 users = "0.6"

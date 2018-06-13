@@ -16,8 +16,6 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
 #[macro_use]
-extern crate clap;
-#[macro_use]
 extern crate error_chain;
 #[macro_use]
 extern crate slog;
@@ -25,14 +23,16 @@ extern crate slog_term;
 extern crate slog_async;
 #[macro_use]
 extern crate slog_scope;
+#[macro_use]
+extern crate structopt;
 
 extern crate coreos_metadata;
 
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use clap::{Arg, App};
 use slog::Drain;
+use structopt::StructOpt;
 
 use coreos_metadata::fetch_metadata;
 use coreos_metadata::errors::*;
@@ -40,13 +40,27 @@ use coreos_metadata::errors::*;
 const CMDLINE_PATH: &'static str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
 
-#[derive(Debug)]
+#[derive(Debug, StructOpt)]
+#[structopt(name = "coreos-metadata")]
 struct Config {
-    provider: String,
+    #[structopt(long = "provider")]
+    /// The name of the cloud provider
+    provider: Option<String>,
+    #[structopt(long = "attributes")]
+    /// The file into which the metadata attributes are written
     attributes_file: Option<String>,
+    #[structopt(long = "ssh-keys")]
+    /// Update SSH keys for the given user
     ssh_keys_user: Option<String>,
+    #[structopt(long = "hostname")]
+    /// The file into which the hostname should be written
     hostname_file: Option<String>,
+    #[structopt(long = "network-units")]
+    /// The directory into which network units are written
     network_units_dir: Option<String>,
+    #[structopt(long = "cmdline")]
+    /// Read the cloud provider from the kernel cmdline
+    cmdline: bool,
 }
 
 quick_main!(run);
@@ -68,8 +82,11 @@ fn run() -> Result<()> {
     trace!("cli configuration - {:?}", config);
 
     // fetch the metadata from the configured provider
-    let metadata = fetch_metadata(&config.provider)
-        .chain_err(|| "fetching metadata from provider")?;
+    let metadata = match config.provider {
+        Some(provider) => fetch_metadata(&provider)
+            .chain_err(|| "fetching metadata from provider")?,
+        None => bail!("Must set either --provider or --cmdline"),
+    };
 
     // write attributes if configured to do so
     config.attributes_file
@@ -117,48 +134,13 @@ fn init() -> Result<Config> {
     //      prepends the hyphens
     // the preprocessing will probably convert any short flags it finds into
     // long ones
-    let matches = App::new("coreos-metadata")
-        .version(crate_version!())
-        .arg(Arg::with_name("attributes")
-             .long("attributes")
-             .help("The file into which the metadata attributes are written")
-             .takes_value(true))
-        .arg(Arg::with_name("cmdline")
-             .long("cmdline")
-             .help("Read the cloud provider from the kernel cmdline"))
-        .arg(Arg::with_name("hostname")
-             .long("hostname")
-             .help("The file into which the hostname should be written")
-             .takes_value(true))
-        .arg(Arg::with_name("network-units")
-             .long("network-units")
-             .help("The directory into which network units are written")
-             .takes_value(true))
-        .arg(Arg::with_name("provider")
-             .long("provider")
-             .help("The name of the cloud provider")
-             .takes_value(true))
-        .arg(Arg::with_name("ssh-keys")
-             .long("ssh-keys")
-             .help("Update SSH keys for the given user")
-             .takes_value(true))
-        .get_matches_from(args);
+    let mut config = Config::from_iter(args);
 
-    // return configuration
-    Ok(Config {
-        provider: match matches.value_of("provider") {
-            Some(provider) => String::from(provider),
-            None => if matches.is_present("cmdline") {
-                get_oem()?
-            } else {
-                return Err("Must set either --provider or --cmdline".into());
-            }
-        },
-        attributes_file: matches.value_of("attributes").map(String::from),
-        ssh_keys_user: matches.value_of("ssh-keys").map(String::from),
-        hostname_file: matches.value_of("hostname").map(String::from),
-        network_units_dir: matches.value_of("network-units").map(String::from),
-    })
+    if config.provider.is_none() && config.cmdline {
+        config.provider = Some(get_oem()?);
+    }
+
+    Ok(config)
 }
 
 fn get_oem() -> Result<String> {
