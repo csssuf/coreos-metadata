@@ -7,6 +7,22 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 name = "coreos-metadata"
 path = "src/bin/coreos-metadata.rs"
 
+[profile.release]
+lto = true
+
+[features]
+default = ["azure", "digitalocean", "cloudstack", "ec2", "gce", "openstack", "packet",
+"vagrant_virtualbox"]
+
+azure = ["openssl", "serde-xml-rs"]
+digitalocean = []
+cloudstack = []
+ec2 = []
+gce = []
+openstack = []
+packet = []
+vagrant_virtualbox = []
+
 [dependencies]
 clap = "2.26"
 users = "0.6"
@@ -16,9 +32,9 @@ slog-scope = "4.0"
 mime = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
-serde-xml-rs = "0.2"
+serde-xml-rs = { version = "0.2", optional = true }
 serde_json = "1.0"
-openssl = "0.9.17"
+openssl = { version = "0.9.17", optional = true }
 base64 = "0.9"
 byteorder = "1.1"
 pnet = "0.21"

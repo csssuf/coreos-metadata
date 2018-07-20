@@ -31,11 +31,13 @@ extern crate slog_scope;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
+#[cfg(feature = "azure")]
 extern crate serde_xml_rs;
 extern crate serde_json;
 
 extern crate pnet;
 
+#[cfg(feature = "azure")]
 extern crate openssl;
 extern crate openssh_keys;
 extern crate update_ssh_keys;
@@ -61,7 +63,7 @@ pub mod errors {
         }
         foreign_links {
             Log(::slog::Error);
-            XmlDeserialize(::serde_xml_rs::Error);
+            XmlDeserialize(::serde_xml_rs::Error) #[cfg(feature = "azure")];
             Base64Decode(::base64::DecodeError);
             Io(::std::io::Error);
             Reqwest(::reqwest::Error);

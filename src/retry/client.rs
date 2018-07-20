@@ -28,6 +28,7 @@ use reqwest::header::ContentType;
 use reqwest::{Method,Request};
 
 use serde;
+#[cfg(feature = "azure")]
 use serde_xml_rs;
 use serde_json;
 
@@ -42,9 +43,11 @@ pub trait Deserializer {
     fn content_type(&self) -> ContentType;
 }
 
+#[cfg(feature = "azure")]
 #[derive(Debug, Clone, Copy)]
 pub struct Xml;
 
+#[cfg(feature = "azure")]
 impl Deserializer for Xml {
     fn deserialize<T, R>(&self, r: R) -> Result<T>
         where T: for<'de> serde::Deserialize<'de>, R: Read

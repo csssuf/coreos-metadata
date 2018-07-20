@@ -23,14 +23,97 @@
 //! function to fetch the metadata, and then add a match line in the top-level
 //! `fetch_metadata()` function in metadata.rs.
 
+macro_rules! provider_stub {
+    ($mod_name:ident, $struct_name:ident, $pretty_name:expr) => {
+        pub mod $mod_name {
+            use std::collections::HashMap;
+
+            use update_ssh_keys::AuthorizedKeyEntry;
+
+            use errors::*;
+            use network;
+
+            pub struct $struct_name;
+
+            impl $struct_name {
+                pub fn new() -> Result<$struct_name> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+            }
+
+            impl super::MetadataProvider for $struct_name {
+                fn attributes(&self) -> Result<HashMap<String, String>> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+
+                fn hostname(&self) -> Result<Option<String>> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+
+                fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+
+                fn networks(&self) -> Result<Vec<network::Interface>> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+
+                fn network_devices(&self) -> Result<Vec<network::Device>> {
+                    Err(ErrorKind::UnknownProvider($pretty_name.to_string()).into())
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "azure")]
 pub mod azure;
+#[cfg(not(feature = "azure"))]
+provider_stub!(azure, Azure, "azure");
+
+#[cfg(feature = "digitalocean")]
 pub mod digitalocean;
+#[cfg(not(feature = "digitalocean"))]
+provider_stub!(digitalocean, DigitalOceanProvider, "digitalocean");
+
+#[cfg(feature = "cloudstack")]
 pub mod cloudstack;
+#[cfg(not(feature = "cloudstack"))]
+pub mod cloudstack {
+    use super::MetadataProvider;
+
+    provider_stub!(network, CloudstackNetwork, "cloudstack-metadata");
+    provider_stub!(configdrive, ConfigDrive, "cloudstack-configdrive");
+}
+
+#[cfg(feature = "ec2")]
 pub mod ec2;
+#[cfg(not(feature = "ec2"))]
+provider_stub!(ec2, Ec2Provider, "ec2");
+
+#[cfg(feature = "gce")]
 pub mod gce;
+#[cfg(not(feature = "gce"))]
+provider_stub!(gce, GceProvider, "gce");
+
+#[cfg(feature = "openstack")]
 pub mod openstack;
+#[cfg(not(feature = "openstack"))]
+pub mod openstack {
+    use super::MetadataProvider;
+
+    provider_stub!(network, OpenstackProvider, "openstack-metadata");
+}
+
+#[cfg(feature = "packet")]
 pub mod packet;
+#[cfg(not(feature = "packet"))]
+provider_stub!(packet, PacketProvider, "packet");
+
+#[cfg(feature = "vagrant_virtualbox")]
 pub mod vagrant_virtualbox;
+#[cfg(not(feature = "vagrant_virtualbox"))]
+provider_stub!(vagrant_virtualbox, VagrantVirtualboxProvider, "vagrant-virtualbox");
 
 use std::collections::HashMap;
 use std::fs::{self, File};
